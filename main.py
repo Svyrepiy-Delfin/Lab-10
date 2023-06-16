@@ -78,28 +78,3 @@ for text in listen():
         break
     else:
         print('vrun')
-
-
-def listen():
-    while True:
-        data = stream.read(4000, exception_on_overflow=False)
-        if record.AcceptWaveform(data) and len(data) > 0:
-            answer = json.loads(record.Result())
-            if answer['text']:
-                yield answer['text']
-
-
-def speak(say):
-    tts.say(say)
-    tts.runAndWait()
-
-
-speak('starting')
-print('start...')
-for text in listen():
-    if text == 'закрыть':
-        quit()
-    elif text == 'блокнот':
-        os.system('notepad.exe')
-    else:
-        print(text)
