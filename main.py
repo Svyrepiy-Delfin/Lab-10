@@ -1,26 +1,83 @@
-import json, os
+import requests
+import vosk
+import cv2
+import json
+import pyaudio
 
-import pyttsx3, pyaudio, vosk
+model = vosk.Model('vosk-model-ru-0.22')
+model = vosk.KaldiRecognizer(model, 16000)
+audio = pyaudio.PyAudio()
+recording = audio.open(
+    input=True
+)
+recording.start_stream()
+data = []
 
-tts = pyttsx3.init('sapi5')
 
-voices = tts.getProperty('voices')
-tts.setProperty('voices', 'en')
+def listen():
+    while True:
+        data = recording.read(4000, exception_on_overflow=False)
+        if model.AcceptWaveform(data) and len(data) > 0:
+            answer = json.loads(model.Result())
+            if answer['text']:
+                yield answer['text']
 
-for voice in voices:
-    print(voice.name)
-    if voice.name == 'Microsoft Zira Desktop - English (United States)':
-        tts.setProperty('voice', voice.id)
 
-model = vosk.Model('model_small')
-record = vosk.KaldiRecognizer(model, 16000)
-pa = pyaudio.PyAudio()
-stream = pa.open(format=pyaudio.paInt16,
-                 channels=1,
-                 rate=16000,
-                 input=True,
-                 frames_per_buffer=8000)
-stream.start_stream()
+def save_image():
+    value = requests.get('https://dog.ceo/api/breeds/image/random').json()['message']
+    out = open('img.jpg', 'wb')
+    out.write(requests.get(value).content)
+    out.close()
+    print('Psina tut')
+
+
+def get_dog_image():
+    value = requests.get('https://dog.ceo/api/breeds/image/random').json()['message']
+    out = open('img.jpg', 'wb')
+    out.write(requests.get(value).content)
+    out.close()
+    print('psina tut')
+    image = cv2.imread('img.jpg')
+    cv2.imshow('psina', image)
+    cv2.waitKey(1)
+    cv2.destroyAllWindows()
+
+
+def name():
+    value = requests.get('https://dog.ceo/api/breeds/image/random').json()['message']
+    result = value.split('/')[-2]
+    print('Poroda psini:', result)
+
+
+def get_image_resolution():
+    width, height, _ = cv2.imread('img.jpg').shape
+    print(width, 'x', height)
+
+
+def get_breed_description():
+    results = requests.get("https://en.wikipedia.org/wiki/List_of_dog_breeds").text.split('\n')
+    for line in results:
+        if "<a href=\"/wiki/" in line:
+            res = line.split("/wiki/")[1].split("\"")[0].replace("_", " ")
+            print(res, end=', ')
+
+
+for text in listen():
+    text = text.lower()
+    if 'показать' in text:
+        get_dog_image()
+    elif 'описание' in text:
+        get_breed_description()
+    elif 'разрешение' in text:
+        get_image_resolution()
+    elif 'сохранить' in text:
+        save_image()
+    elif 'назвать породу' in text:
+        name()
+    elif 'выход' in text:
+        break
+    else:
+        print('vrun')
 
 
 def listen():
